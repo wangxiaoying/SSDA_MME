@@ -5,7 +5,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.autograd import Variable
 from model.resnet import resnet34
 from model.basenet import AlexNetBase, VGGBase, Predictor, Predictor_deep
 from utils.utils import weights_init
@@ -71,7 +70,7 @@ record_file = os.path.join(record_dir,
                            (args.method, args.net, args.source,
                             args.target, args.num))
 
-torch.cuda.manual_seed(args.seed)
+torch.cuda.manual_seed(args.seed) if use_gpu else torch.manual_seed(args.seed)
 if args.net == 'resnet34':
     G = resnet34()
     inc = 512
@@ -102,8 +101,9 @@ else:
                    temp=args.T)
 weights_init(F1)
 lr = args.lr
-G.cuda()
-F1.cuda()
+if use_gpu:
+    G.cuda()
+    F1.cuda()
 
 im_data_s = torch.FloatTensor(1)
 im_data_t = torch.FloatTensor(1)
@@ -113,21 +113,14 @@ gt_labels_t = torch.LongTensor(1)
 sample_labels_t = torch.LongTensor(1)
 sample_labels_s = torch.LongTensor(1)
 
-im_data_s = im_data_s.cuda()
-im_data_t = im_data_t.cuda()
-im_data_tu = im_data_tu.cuda()
-gt_labels_s = gt_labels_s.cuda()
-gt_labels_t = gt_labels_t.cuda()
-sample_labels_t = sample_labels_t.cuda()
-sample_labels_s = sample_labels_s.cuda()
-
-im_data_s = Variable(im_data_s)
-im_data_t = Variable(im_data_t)
-im_data_tu = Variable(im_data_tu)
-gt_labels_s = Variable(gt_labels_s)
-gt_labels_t = Variable(gt_labels_t)
-sample_labels_t = Variable(sample_labels_t)
-sample_labels_s = Variable(sample_labels_s)
+if use_gpu:
+    im_data_s = im_data_s.cuda()
+    im_data_t = im_data_t.cuda()
+    im_data_tu = im_data_tu.cuda()
+    gt_labels_s = gt_labels_s.cuda()
+    gt_labels_t = gt_labels_t.cuda()
+    sample_labels_t = sample_labels_t.cuda()
+    sample_labels_s = sample_labels_s.cuda()
 
 if os.path.exists(args.checkpath) == False:
     os.mkdir(args.checkpath)
@@ -150,7 +143,7 @@ def train():
     param_lr_f = []
     for param_group in optimizer_f.param_groups:
         param_lr_f.append(param_group["lr"])
-    criterion = nn.CrossEntropyLoss().cuda()
+    criterion = nn.CrossEntropyLoss().cuda() if use_gpu else nn.CrossEntropyLoss()
     all_step = args.steps
     data_iter_s = iter(source_loader)
     data_iter_t = iter(target_loader)
@@ -175,11 +168,11 @@ def train():
         data_t = next(data_iter_t)
         data_t_unl = next(data_iter_t_unl)
         data_s = next(data_iter_s)
-        im_data_s.data.resize_(data_s[0].size()).copy_(data_s[0])
-        gt_labels_s.data.resize_(data_s[1].size()).copy_(data_s[1])
-        im_data_t.data.resize_(data_t[0].size()).copy_(data_t[0])
-        gt_labels_t.data.resize_(data_t[1].size()).copy_(data_t[1])
-        im_data_tu.data.resize_(data_t_unl[0].size()).copy_(data_t_unl[0])
+        im_data_s.resize_(data_s[0].size()).copy_(data_s[0])
+        gt_labels_s.resize_(data_s[1].size()).copy_(data_s[1])
+        im_data_t.resize_(data_t[0].size()).copy_(data_t[0])
+        gt_labels_t.resize_(data_t[1].size()).copy_(data_t[1])
+        im_data_tu.resize_(data_t_unl[0].size()).copy_(data_t_unl[0])
         zero_grad_all()
         data = torch.cat((im_data_s, im_data_t), 0)
         target = torch.cat((gt_labels_s, gt_labels_t), 0)
@@ -267,12 +260,12 @@ def test(loader):
     size = 0
     num_class = len(class_list)
     output_all = np.zeros((0, num_class))
-    criterion = nn.CrossEntropyLoss().cuda()
+    criterion = nn.CrossEntropyLoss().cuda() if use_gpu else nn.CrossEntropyLoss()
     confusion_matrix = torch.zeros(num_class, num_class)
     with torch.no_grad():
         for batch_idx, data_t in enumerate(loader):
-            im_data_t.data.resize_(data_t[0].size()).copy_(data_t[0])
-            gt_labels_t.data.resize_(data_t[1].size()).copy_(data_t[1])
+            im_data_t.resize_(data_t[0].size()).copy_(data_t[0])
+            gt_labels_t.resize_(data_t[1].size()).copy_(data_t[1])
             feat = G(im_data_t)
             output1 = F1(feat)
             output_all = np.r_[output_all, output1.data.cpu().numpy()]

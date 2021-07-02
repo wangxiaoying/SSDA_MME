@@ -6,18 +6,18 @@ from torch.autograd import Function
 
 
 class GradReverse(Function):
-    def __init__(self, lambd):
-        self.lambd = lambd
-
-    def forward(self, x):
+    @staticmethod
+    def forward(ctx, x, lambd):
+        ctx.lambd = lambd
         return x.view_as(x)
 
-    def backward(self, grad_output):
-        return (grad_output * -self.lambd)
+    @staticmethod
+    def backward(ctx, grad_output):
+        return (grad_output * -ctx.lambd), None
 
 
 def grad_reverse(x, lambd=1.0):
-    return GradReverse(lambd)(x)
+    return GradReverse.apply(x, lambd)
 
 
 def l2_norm(input):
