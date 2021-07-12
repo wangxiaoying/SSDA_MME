@@ -17,9 +17,9 @@ parser.add_argument('--steps', type=int, default=50000, metavar='N',
                     help='maximum number of iterations '
                          'to train (default: 50000)')
 parser.add_argument('--method', type=str, default='MME',
-                    choices=['S+T', 'ENT', 'MME'],
+                    choices=['S+T', 'ENT', 'MME', 'T'],
                     help='MME is proposed method, ENT is entropy minimization,'
-                         ' S+T is training only on labeled examples')
+                         ' S+T is training only on labeled examples, T only uses labeled target')
 parser.add_argument('--lr', type=float, default=0.01, metavar='LR',
                     help='learning rate (default: 0.001)')
 parser.add_argument('--multi', type=float, default=0.1, metavar='MLT',
@@ -176,8 +176,12 @@ def train():
         gt_labels_t.resize_(data_t[1].size()).copy_(data_t[1])
         im_data_tu.resize_(data_t_unl[0].size()).copy_(data_t_unl[0])
         zero_grad_all()
-        data = torch.cat((im_data_s, im_data_t), 0)
-        target = torch.cat((gt_labels_s, gt_labels_t), 0)
+        if args.method == 'T':  # only use labeled target
+            data = im_data_t
+            target = gt_labels_t
+        else:
+            data = torch.cat((im_data_s, im_data_t), 0)
+            target = torch.cat((gt_labels_s, gt_labels_t), 0)
         output = G(data)
         out1 = F1(output)
         loss = criterion(out1, target)
@@ -185,7 +189,7 @@ def train():
         optimizer_g.step()
         optimizer_f.step()
         zero_grad_all()
-        if not args.method == 'S+T':
+        if args.method in ['ENT', 'MME']:
             output = G(im_data_tu)
             if args.method == 'ENT':
                 loss_t = entropy(F1, output, args.lamda)
