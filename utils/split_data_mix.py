@@ -35,5 +35,5 @@ with open(f"{DATA_DIR}/labeled_target_images_{args.source}mix{args.seed}_{args.b
             lwriter.writerow(row)
         else:
             uwriter.writerow(row)
-            if i < labeled_num + valid_num:
+            if i >= len(all_info) - valid_num:
                 vwriter.writerow(row)

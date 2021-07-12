@@ -34,5 +34,5 @@ with open(f"{DATA_DIR}/labeled_target_images_{args.source}{args.seed}_{args.budg
                 lwriter.writerow([v, cls])
             else:
                 uwriter.writerow([v, cls])
-                if i < args.budget + 3:  # fix to 3 by default like in paper
+                if i >= len(lst) - 3:  # fix to 3 by default like in paper, here we use the last three
                     vwriter.writerow([v, cls])
