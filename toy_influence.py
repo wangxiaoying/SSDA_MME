@@ -95,7 +95,7 @@ def train(train_loader, valid_loader, test_loader, seed=0, epochs=100000, log_in
 
 
 if __name__ == "__main__":
-    with open("toy_data/cluster", "rb") as f:
+    with open("toy_data/cluster.npy", "rb") as f:
         X_source = np.load(f)
         y_source = np.load(f)
         X_target_labeled = np.load(f)
