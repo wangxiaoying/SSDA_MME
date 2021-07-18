@@ -5,6 +5,8 @@ import torch.nn as nn
 import torch
 import pytorch_influence_functions as ptif
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 class ToyDataset(torch.utils.data.Dataset):
     def __init__(self, X, y):
@@ -39,8 +41,10 @@ def test(model, loader, tag="Test"):
     with torch.no_grad():
         for data in loader:
             X, y = data
-            y_pred = model(X.float())
-            loss = criterion(y_pred, y.long())
+            X = X.to(device).float()
+            y = y.to(device).long()
+            y_pred = model(X)
+            loss = criterion(y_pred, y)
             probs = F.softmax(y_pred, dim=-1)
             _, predvals = torch.max(probs, 1)
             is_correct.extend((predvals == y).cpu().data.numpy())
@@ -53,7 +57,7 @@ def test(model, loader, tag="Test"):
 def train(train_loader, valid_loader, test_loader, seed=0, epochs=100000, log_interval=100, early_stop=10):
     torch.manual_seed(seed)
 
-    model = ToyModel()
+    model = ToyModel().to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
@@ -65,8 +69,10 @@ def train(train_loader, valid_loader, test_loader, seed=0, epochs=100000, log_in
         model.train()
         for data in train_loader:
             X, y = data
-            y_pred = model(X.float())
-            loss = criterion(y_pred, y.long())
+            X = X.to(device).float()
+            y = y.to(device).long()
+            y_pred = model(X)
+            loss = criterion(y_pred, y)
             losses.append(loss.item())
             optimizer.zero_grad()
             loss.backward()
@@ -123,7 +129,7 @@ if __name__ == "__main__":
 
     ptif.init_logging()
     config = ptif.get_default_config()
-    config['gpu'] = 0
+    config['gpu'] = 0 if torch.cuda.is_available() else -1
     config['dataset'] = 'Toy'
     config['num_classes'] = 2
     # make sure all labeled target are included
