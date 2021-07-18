@@ -80,10 +80,11 @@ def train(train_loader, valid_loader, test_loader, seed=0, epochs=100000, log_in
             _, test_acc = test(model, test_loader, tag="Test")
             losses = []
 
-            if valid_acc > best_valid_acc:
-                counter = 0
+            if valid_acc >= best_valid_acc:
                 best_valid_acc = valid_acc
                 best_test_acc = test_acc
+            if valid_acc > best_valid_acc:
+                counter = 0
             else:
                 counter += 1
 
@@ -125,7 +126,8 @@ if __name__ == "__main__":
     config['gpu'] = 0
     config['dataset'] = 'Toy'
     config['num_classes'] = 2
-    config['test_sample_num'] = 10
+    # make sure all labeled target are included
+    config['test_sample_num'] = 100
 
     influences, harmful, helpful = ptif.calc_img_wise(
         config, model, train_loader, valid_loader)
