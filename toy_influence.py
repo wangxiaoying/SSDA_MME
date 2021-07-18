@@ -41,8 +41,8 @@ def test(model, loader, tag="Test"):
     with torch.no_grad():
         for data in loader:
             X, y = data
-            X = X.to(device).float()
-            y = y.to(device).long()
+            X = X.to(device)
+            y = y.to(device)
             y_pred = model(X)
             loss = criterion(y_pred, y)
             probs = F.softmax(y_pred, dim=-1)
@@ -69,8 +69,8 @@ def train(train_loader, valid_loader, test_loader, seed=0, epochs=100000, log_in
         model.train()
         for data in train_loader:
             X, y = data
-            X = X.to(device).float()
-            y = y.to(device).long()
+            X = X.to(device)
+            y = y.to(device)
             y_pred = model(X)
             loss = criterion(y_pred, y)
             losses.append(loss.item())
@@ -109,6 +109,17 @@ if __name__ == "__main__":
         y_target_labeled = np.load(f)
         X_target_unlabeled = np.load(f)
         y_target_unlabeled = np.load(f)
+
+    X_source = torch.from_numpy(X_source).type(torch.FloatTensor)
+    y_source = torch.from_numpy(y_source).type(torch.LongTensor)
+    X_target_labeled = torch.from_numpy(
+        X_target_labeled).type(torch.FloatTensor)
+    y_target_labeled = torch.from_numpy(
+        y_target_labeled).type(torch.LongTensor)
+    X_target_unlabeled = torch.from_numpy(
+        X_target_unlabeled).type(torch.FloatTensor)
+    y_target_unlabeled = torch.from_numpy(
+        y_target_unlabeled).type(torch.LongTensor)
 
     # Train: source
     # Valid: labeled target
